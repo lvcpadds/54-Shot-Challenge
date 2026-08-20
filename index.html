@@ -208,6 +208,46 @@
   }
   .hist-count{font-size:11px; color:var(--muted);}
   .hist-empty{font-size:12px; color:var(--muted); padding:6px 2px;}
+
+  .tabbar{
+    margin:16px 20px 4px;
+    display:flex; gap:8px;
+    background:rgba(244,239,228,.12);
+    border-radius:12px;
+    padding:4px;
+  }
+  .tabbtn{
+    flex:1;
+    border:none; background:transparent;
+    color:#c9e3d3;
+    font-size:13px; font-weight:700;
+    padding:9px 0;
+    border-radius:9px;
+    cursor:pointer;
+  }
+  .tabbtn.active{background:var(--cream); color:var(--turf-1);}
+
+  .rangebar{display:flex; gap:8px; margin:0 0 14px;}
+  .rangebtn{
+    flex:1;
+    border:1.5px solid var(--line); background:#fff; color:var(--muted);
+    font-size:12px; font-weight:700;
+    padding:8px 0; border-radius:9px; cursor:pointer;
+  }
+  .rangebtn.active{background:var(--turf-1); border-color:var(--turf-1); color:#fff;}
+
+  .chartwrap{background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 6px 4px; margin-bottom:14px;}
+  .chart-empty{font-size:12px; color:var(--muted); text-align:center; padding:30px 10px;}
+  .trend-line{font-size:11px; color:var(--muted); text-align:center; padding:0 0 8px;}
+
+  .databtns{display:flex; gap:10px; margin-top:4px;}
+  .databtn{
+    flex:1; background:#fff; border:1.5px solid var(--line); color:var(--turf-1);
+    font-size:12.5px; font-weight:700; padding:11px 0; border-radius:11px; cursor:pointer;
+  }
+  .data-hint{font-size:10.5px; color:var(--muted); margin-top:8px; line-height:1.4;}
+  #importFile{display:none;}
+  .missing-note{font-size:10.5px; color:var(--flag); margin-top:6px; margin-left:32px;}
 </style>
 </head>
 <body>
@@ -229,12 +269,19 @@
     <div class="label">avg rating</div>
   </div>
 </div>
+<div class="missing-note" id="remainingNote" style="margin-left:20px;"></div>
 
 <div class="meta">
   <input id="dateField" type="date">
   <input id="locField" type="text" placeholder="Course / range">
 </div>
 
+<div class="tabbar">
+  <button class="tabbtn active" id="tabLog">Today</button>
+  <button class="tabbtn" id="tabDash">Dashboard</button>
+</div>
+
+<div id="viewLog">
 <main>
 
   <div class="card">
@@ -285,12 +332,6 @@
 </main>
 
 <footer>
-  <div class="card history">
-    <h2>Session history</h2>
-    <div class="lifetime" id="lifetimeStats"></div>
-    <div id="historyList"></div>
-  </div>
-
   <div class="notes">
     <h2>Notes for next time</h2>
     <textarea id="notesField" placeholder="What worked, what to dial in..."></textarea>
@@ -300,6 +341,43 @@
   </div>
   <div class="saved" id="savedMsg"></div>
 </footer>
+</div>
+
+<div id="viewDash" style="display:none; padding:0 14px 30px;">
+  <div class="card">
+    <h2 style="margin:0 0 10px;">Lifetime</h2>
+    <div class="lifetime" id="dashLifetime"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin:0 0 10px;">Score over time</h2>
+    <div class="rangebar" id="rangeBar">
+      <button class="rangebtn" data-days="7">7D</button>
+      <button class="rangebtn" data-days="30">30D</button>
+      <button class="rangebtn" data-days="90">90D</button>
+      <button class="rangebtn active" data-days="0">All</button>
+    </div>
+    <div class="chartwrap">
+      <svg id="chartSvg" viewBox="0 0 300 120" style="width:100%; height:140px; display:block;"></svg>
+    </div>
+    <div class="trend-line" id="trendLine"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin:0 0 4px;">Sessions in range</h2>
+    <div id="dashHistoryList"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin:0 0 8px;">Backup</h2>
+    <div class="databtns">
+      <button class="databtn" id="exportBtn">Export data</button>
+      <button class="databtn" id="importBtn">Import data</button>
+    </div>
+    <input type="file" id="importFile" accept="application/json">
+    <div class="data-hint">Everything already autosaves to this browser on this phone. Export makes a JSON backup you can keep or move to another device - import restores from one (newer dates overwrite matching dates already saved here).</div>
+  </div>
+</div>
 
 <script>
 const STORE_KEY = "shot54_sessions_v1";
@@ -353,7 +431,7 @@ function buildSimpleRow(id, arr){
       arr[i] = nextValue(arr[i] || 0);
       d.className = "chip" + (arr[i] ? " v" + arr[i] : "");
       d.textContent = arr[i] ? arr[i] : "";
-      updateScore(); persist(); renderHistory();
+      updateScore(); persist();
     };
     el.appendChild(d);
   });
@@ -383,7 +461,7 @@ function buildGrid(){
       const next = nextValue(session.grid[key] || 0);
       session.grid[key] = next;
       paintChip(el, next);
-      updateScore(); persist(); renderHistory();
+      updateScore(); persist();
     };
   });
 }
@@ -417,14 +495,31 @@ function updateScore(){
 
   const avg = gridAverage(session);
   document.getElementById('gridAvg').textContent = avg ? ("avg " + avg.toFixed(1) + "/5") : "";
+
+  const remaining = TOTAL_CELLS - done;
+  document.getElementById('remainingNote').textContent =
+    remaining > 0 ? `${remaining} box${remaining===1?"":"es"} still empty for this session` : "";
 }
 
-function renderHistory(){
-  const dates = Object.keys(sessions)
-    .filter(d => sessionDone(sessions[d]) > 0 || d === currentDate)
-    .sort((a,b)=> b.localeCompare(a));
+// ---------- Dashboard ----------
+let rangeDays = 0; // 0 = all time
 
-  const loggedDates = dates.filter(d => sessions[d] && sessionDone(sessions[d]) > 0);
+function loggedDatesSorted(desc){
+  const dates = Object.keys(sessions).filter(d => sessionDone(sessions[d]) > 0);
+  dates.sort((a,b)=> desc ? b.localeCompare(a) : a.localeCompare(b));
+  return dates;
+}
+
+function datesInRange(dates){
+  if(!rangeDays) return dates;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - rangeDays);
+  const cutoffStr = cutoff.toISOString().slice(0,10);
+  return dates.filter(d => d >= cutoffStr);
+}
+
+function renderDashLifetime(){
+  const loggedDates = loggedDatesSorted(false);
   const allVals = loggedDates.flatMap(d=>{
     const s = sessions[d];
     return [s.r1,s.r3,s.r4,s.r5,s.r6,s.r7].flat().concat(Object.values(s.grid));
@@ -435,18 +530,73 @@ function renderHistory(){
     return (a!==null && (best===null || a>best)) ? a : best;
   }, null);
 
-  document.getElementById('lifetimeStats').innerHTML = `
+  document.getElementById('dashLifetime').innerHTML = `
     <div class="stat"><div class="v">${loggedDates.length}</div><div class="k">sessions</div></div>
     <div class="stat"><div class="v">${lifetimeAvg ? lifetimeAvg.toFixed(1) : "-"}</div><div class="k">lifetime avg</div></div>
     <div class="stat"><div class="v">${bestAvg ? bestAvg.toFixed(1) : "-"}</div><div class="k">best session</div></div>
   `;
+}
 
-  const listEl = document.getElementById('historyList');
-  if(!dates.length){
-    listEl.innerHTML = `<div class="hist-empty">No sessions logged yet - tap a box above to start today's.</div>`;
+function drawChart(points){
+  const svg = document.getElementById('chartSvg');
+  const trendEl = document.getElementById('trendLine');
+
+  if(!points.length){
+    svg.innerHTML = `<text x="150" y="62" text-anchor="middle" font-size="10" fill="#5c7568">No sessions in this range yet</text>`;
+    trendEl.textContent = "";
     return;
   }
-  listEl.innerHTML = dates.map(d=>{
+
+  const left=22, right=10, top=12, bottom=22, W=300, H=120;
+  const innerW = W-left-right, innerH = H-top-bottom;
+  const n = points.length;
+  const xFor = (i)=> n===1 ? left+innerW/2 : left + (innerW * i/(n-1));
+  const yFor = (v)=> top + innerH * (5 - v) / 4;
+
+  let svgParts = [];
+  [1,3,5].forEach(v=>{
+    const y = yFor(v);
+    svgParts.push(`<line x1="${left}" y1="${y}" x2="${W-right}" y2="${y}" stroke="#e3ebe3" stroke-width="1"/>`);
+    svgParts.push(`<text x="2" y="${y+3}" font-size="8" fill="#8ba296">${v}</text>`);
+  });
+
+  const linePts = points.map((p,i)=> `${xFor(i)},${yFor(p.avg)}`).join(" ");
+  svgParts.push(`<polyline points="${linePts}" fill="none" stroke="#1f8a4c" stroke-width="2"/>`);
+  points.forEach((p,i)=>{
+    svgParts.push(`<circle cx="${xFor(i)}" cy="${yFor(p.avg)}" r="3" fill="#1f8a4c"/>`);
+  });
+
+  svgParts.push(`<text x="${left}" y="${H-6}" font-size="8" fill="#8ba296">${points[0].date.slice(5)}</text>`);
+  if(n>1){
+    svgParts.push(`<text x="${W-right}" y="${H-6}" font-size="8" fill="#8ba296" text-anchor="end">${points[n-1].date.slice(5)}</text>`);
+  }
+
+  svg.innerHTML = svgParts.join("");
+
+  if(n>=2){
+    const half = Math.floor(n/2) || 1;
+    const early = points.slice(0, half).reduce((a,p)=>a+p.avg,0) / half;
+    const late = points.slice(n-half).reduce((a,p)=>a+p.avg,0) / half;
+    const delta = late - early;
+    const arrow = delta > 0.05 ? "up" : delta < -0.05 ? "down" : "holding steady";
+    trendEl.textContent = arrow === "holding steady"
+      ? `Holding steady around ${late.toFixed(1)} across this range`
+      : `Trending ${arrow} ${delta>0?"+":""}${delta.toFixed(1)} vs the start of this range`;
+  } else {
+    trendEl.textContent = "Log a few more sessions to see a trend";
+  }
+}
+
+function renderDashHistoryList(){
+  const all = loggedDatesSorted(true);
+  const filtered = datesInRange(all);
+  const listEl = document.getElementById('dashHistoryList');
+
+  if(!filtered.length){
+    listEl.innerHTML = `<div class="hist-empty">No sessions logged in this range yet.</div>`;
+    return;
+  }
+  listEl.innerHTML = filtered.map(d=>{
     const s = sessions[d];
     const done = sessionDone(s);
     const avg = sessionAverage(s);
@@ -463,8 +613,62 @@ function renderHistory(){
     </div>`;
   }).join("");
   listEl.querySelectorAll('.hist-row').forEach(row=>{
-    row.onclick = ()=> switchToDate(row.getAttribute('data-date'));
+    row.onclick = ()=>{
+      switchToDate(row.getAttribute('data-date'));
+      showTab('log');
+    };
   });
+}
+
+function renderDashboard(){
+  renderDashLifetime();
+  const asc = loggedDatesSorted(false);
+  const filteredAsc = datesInRange(asc);
+  const points = filteredAsc.map(d => ({date: d, avg: sessionAverage(sessions[d])})).filter(p=>p.avg!==null);
+  drawChart(points);
+  renderDashHistoryList();
+}
+
+function showTab(which){
+  const log = document.getElementById('viewLog');
+  const dash = document.getElementById('viewDash');
+  document.getElementById('tabLog').classList.toggle('active', which==='log');
+  document.getElementById('tabDash').classList.toggle('active', which==='dash');
+  log.style.display = which==='log' ? '' : 'none';
+  dash.style.display = which==='dash' ? '' : 'none';
+  if(which==='dash') renderDashboard();
+}
+
+function exportData(){
+  const blob = new Blob([JSON.stringify(sessions, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `54-shot-challenge-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function importData(file){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    let incoming;
+    try{ incoming = JSON.parse(e.target.result); }
+    catch(err){ alert("That file doesn't look like a valid backup."); return; }
+    const incomingDates = Object.keys(incoming || {});
+    if(!incomingDates.length){ alert("No sessions found in that file."); return; }
+    if(!confirm(`Import ${incomingDates.length} session(s)? Any dates that already exist here will be overwritten.`)) return;
+    Object.assign(sessions, incoming);
+    localStorage.setItem(STORE_KEY, JSON.stringify(sessions));
+    session = sessions[currentDate] ? JSON.parse(JSON.stringify(sessions[currentDate])) : emptySession();
+    renderAll();
+    renderDashboard();
+    alert("Import complete.");
+  };
+  reader.readAsText(file);
 }
 
 function renderAll(){
@@ -480,7 +684,6 @@ function renderAll(){
   buildSimpleRow('row7', session.r7);
   buildGrid();
   updateScore();
-  renderHistory();
 }
 
 function switchToDate(d){
@@ -496,7 +699,7 @@ function init(){
   document.getElementById('dateField').onchange = (e)=>{
     switchToDate(e.target.value || new Date().toISOString().slice(0,10));
   };
-  document.getElementById('locField').oninput = (e)=>{ session.loc = e.target.value; persist(); renderHistory(); };
+  document.getElementById('locField').oninput = (e)=>{ session.loc = e.target.value; persist(); };
   document.getElementById('notesField').oninput = (e)=>{ session.notes = e.target.value; persist(); };
 
   document.getElementById('resetBtn').onclick = ()=>{
@@ -504,6 +707,26 @@ function init(){
     session = emptySession();
     persist();
     renderAll();
+  };
+
+  document.getElementById('tabLog').onclick = ()=> showTab('log');
+  document.getElementById('tabDash').onclick = ()=> showTab('dash');
+
+  document.querySelectorAll('.rangebtn').forEach(btn=>{
+    btn.onclick = ()=>{
+      document.querySelectorAll('.rangebtn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      rangeDays = parseInt(btn.getAttribute('data-days'), 10) || 0;
+      renderDashboard();
+    };
+  });
+
+  document.getElementById('exportBtn').onclick = exportData;
+  document.getElementById('importBtn').onclick = ()=> document.getElementById('importFile').click();
+  document.getElementById('importFile').onchange = (e)=>{
+    const file = e.target.files[0];
+    if(file) importData(file);
+    e.target.value = "";
   };
 }
 init();
