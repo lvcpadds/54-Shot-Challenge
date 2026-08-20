@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>54-Shot Challenge</title>
+<style>
+  :root{
+    --turf-1:#0f3d2e;
+    --turf-2:#164a37;
+    --cream:#f4efe4;
+    --line:#c9dcc9;
+    --flag:#c0392b;
+    --ink:#12241b;
+    --muted:#5c7568;
+    --done:#1f8a4c;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:
+      radial-gradient(circle at 20% 0%, var(--turf-2), var(--turf-1) 55%);
+    color:var(--ink);
+    min-height:100vh;
+    padding-bottom:60px;
+  }
+  header{
+    padding:26px 20px 18px;
+    color:var(--cream);
+  }
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:#9fd8b8;
+    font-weight:600;
+    margin-bottom:6px;
+  }
+  h1{
+    margin:0 0 4px;
+    font-size:28px;
+    font-weight:800;
+    letter-spacing:-0.01em;
+  }
+  .sub{font-size:13px; color:#c9e3d3; max-width:46ch; line-height:1.4;}
+
+  .scorebar{
+    margin:16px 20px 6px;
+    background:var(--cream);
+    border-radius:16px;
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    box-shadow:0 8px 24px rgba(0,0,0,.25);
+  }
+  .scorebar .num{font-size:32px; font-weight:800; font-variant-numeric:tabular-nums;}
+  .scorebar .label{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em;}
+  .scorebar .track{
+    flex:1; height:8px; background:var(--line); border-radius:99px; margin:0 14px; overflow:hidden;
+  }
+  .scorebar .fill{height:100%; background:var(--done); width:0%; transition:width .25s ease;}
+
+  .meta{
+    margin:14px 20px 0;
+    display:flex; gap:10px;
+  }
+  .meta input{
+    flex:1;
+    background:rgba(244,239,228,.12);
+    border:1px solid rgba(244,239,228,.3);
+    border-radius:10px;
+    padding:9px 11px;
+    color:var(--cream);
+    font-size:13px;
+  }
+  .meta input::placeholder{color:#bcd6c6;}
+
+  main{padding:18px 14px 0;}
+  .card{
+    background:var(--cream);
+    border-radius:16px;
+    padding:16px 16px 14px;
+    margin-bottom:12px;
+    box-shadow:0 8px 20px rgba(0,0,0,.18);
+  }
+  .card h2{
+    margin:0 0 4px;
+    font-size:15.5px;
+    line-height:1.35;
+    display:flex;
+    gap:10px;
+  }
+  .card h2 .n{
+    flex:none;
+    width:22px; height:22px;
+    border-radius:50%;
+    background:var(--turf-1);
+    color:var(--cream);
+    font-size:12px;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700;
+    margin-top:1px;
+  }
+  .card .desc{font-size:12.5px; color:var(--muted); margin:4px 0 12px 32px; line-height:1.4;}
+
+  .row{display:flex; flex-wrap:wrap; gap:8px; margin-left:32px;}
+  .chip{
+    width:38px; height:38px;
+    border-radius:10px;
+    border:1.5px solid var(--line);
+    background:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px; font-weight:800; color:var(--muted);
+    cursor:pointer;
+    user-select:none;
+    transition:all .12s ease;
+  }
+  .chip.v1{background:#e3f3e6; border-color:#c7e6cc; color:#2a6b3f;}
+  .chip.v2{background:#c7e6cc; border-color:#a9d9b1; color:#1f5e33;}
+  .chip.v3{background:#a2d6ab; border-color:#8bc998; color:#164a2a;}
+  .chip.v4{background:#6fc082; border-color:#57b26e; color:#0e321c;}
+  .chip.v5{background:var(--done); border-color:var(--done); color:#fff; transform:scale(1.04);}
+
+  .grid-wrap{margin-left:32px; overflow-x:auto;}
+  table.gridtbl{border-collapse:collapse; font-size:11.5px;}
+  table.gridtbl th{
+    color:var(--muted); font-weight:700; padding:0 6px 6px; text-align:center;
+  }
+  table.gridtbl td{padding:3px 5px; text-align:center;}
+  table.gridtbl td:first-child, table.gridtbl th:first-child{
+    text-align:left; padding-left:0; color:var(--ink); font-weight:600; white-space:nowrap;
+  }
+  .gchip{
+    width:28px; height:28px; border-radius:7px;
+    border:1.5px solid var(--line); background:#fff;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:12.5px; font-weight:800; color:var(--muted);
+    cursor:pointer; user-select:none;
+    transition:all .1s ease;
+  }
+  .gchip.v1{background:#e3f3e6; border-color:#c7e6cc; color:#2a6b3f;}
+  .gchip.v2{background:#c7e6cc; border-color:#a9d9b1; color:#1f5e33;}
+  .gchip.v3{background:#a2d6ab; border-color:#8bc998; color:#164a2a;}
+  .gchip.v4{background:#6fc082; border-color:#57b26e; color:#0e321c; }
+  .gchip.v5{background:var(--done); border-color:var(--done); color:#fff;}
+  .gridhead-row{margin-left:32px; display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px;}
+  .gridavg{font-size:11px; color:var(--muted); font-weight:600;}
+
+  .club-input{
+    margin-left:32px; margin-top:8px;
+  }
+  .club-input input{
+    width:100%; border:1px solid var(--line); border-radius:8px; padding:7px 10px;
+    font-size:13px; color:var(--ink); background:#fff;
+  }
+
+  footer{
+    padding:6px 20px 30px;
+  }
+  .notes{
+    background:var(--cream); border-radius:16px; padding:14px 16px; margin:6px 0 14px;
+  }
+  .notes h2{font-size:14px; margin:0 0 8px;}
+  .notes textarea{
+    width:100%; min-height:70px; border:1px solid var(--line); border-radius:10px;
+    padding:10px; font-size:13px; font-family:inherit; resize:vertical; color:var(--ink);
+  }
+  .btnrow{display:flex; gap:10px;}
+  button.reset{
+    flex:1;
+    background:transparent;
+    border:1.5px solid rgba(244,239,228,.4);
+    color:var(--cream);
+    padding:12px;
+    border-radius:12px;
+    font-size:13px;
+    font-weight:600;
+  }
+  .saved{
+    text-align:center; font-size:11px; color:#9fd8b8; margin-top:8px; min-height:14px;
+  }
+
+  .history h2{margin:0 0 2px; font-size:14px;}
+  .lifetime{
+    display:flex; gap:10px; margin:10px 0 12px;
+  }
+  .lifetime .stat{
+    flex:1; background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:9px 8px; text-align:center;
+  }
+  .lifetime .stat .v{font-size:17px; font-weight:800; color:var(--turf-1);}
+  .lifetime .stat .k{font-size:9.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-top:1px;}
+  .hist-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:9px 2px; border-top:1px solid var(--line);
+    cursor:pointer;
+  }
+  .hist-row:first-child{border-top:none;}
+  .hist-row.active{background:#eaf5ec; border-radius:8px;}
+  .hist-date{font-size:13px; font-weight:700;}
+  .hist-loc{font-size:11px; color:var(--muted);}
+  .hist-right{display:flex; align-items:center; gap:8px;}
+  .hist-avg{
+    font-size:12px; font-weight:800; color:#fff; background:var(--done);
+    border-radius:8px; padding:3px 7px; min-width:30px; text-align:center;
+  }
+  .hist-count{font-size:11px; color:var(--muted);}
+  .hist-empty{font-size:12px; color:var(--muted); padding:6px 2px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Practice \u00b7 Vision54 drill</div>
+  <h1>54-Shot Challenge</h1>
+  <div class="sub">Full routine, real target, every shot. Tap a box once you've hit it \u2014 rate yourself 1\u20135 in your head as you go (5 = exactly what you meant to do).</div>
+</header>
+
+<div class="scorebar">
+  <div>
+    <div class="num" id="doneCount">0</div>
+    <div class="label" id="ofLabel">of 68</div>
+  </div>
+  <div class="track"><div class="fill" id="fillBar"></div></div>
+  <div style="text-align:right;">
+    <div class="num" id="avgOverall">–</div>
+    <div class="label">avg rating</div>
+  </div>
+</div>
+
+<div class="meta">
+  <input id="dateField" type="date">
+  <input id="locField" type="text" placeholder="Course / range">
+</div>
+
+<main>
+
+  <div class="card">
+    <h2><span class="n">1</span> Five different clubs, five different targets</h2>
+    <div class="desc">One shot per club. New target every time. Tap a box to log a shot (defaults to a 4), tap again to adjust or clear.</div>
+    <div class="row" id="row1"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">2</span> One club, five shot shapes</h2>
+    <div class="desc">Pick a club below, then hit a high, a low, a fade (curving right), a draw (curving left), and a half shot with it. Tap a box to log a shot (defaults to a 4), tap again to bump the rating or cycle back to clear.</div>
+    <div class="gridhead-row"><span></span><span class="gridavg" id="gridAvg"></span></div>
+    <div class="grid-wrap">
+      <table class="gridtbl" id="gridTable"></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">3</span> Opposite-handed, five shots</h2>
+    <div class="desc">Turn a club around \u2014 righty swings lefty, or lefty swings righty. Tap to log (defaults to a 4), tap again to adjust.</div>
+    <div class="row" id="row3"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">4</span> Match the carry, five shots</h2>
+    <div class="desc">Full 8-iron first, note the carry. Then hit 7i, 6i, 5i, fairway wood, and driver that all carry that same distance. Tap to log (defaults to a 4), tap again to adjust.</div>
+    <div class="row" id="row4"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">5</span> Break your stance, three shots</h2>
+    <div class="desc">7-iron with feet together \u2192 7-iron standing on your left leg \u2192 7-iron with eyes closed. Tap to log (defaults to a 4), tap again to adjust.</div>
+    <div class="row" id="row5"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">6</span> Out of a divot, five shots</h2>
+    <div class="desc">Five different clubs, all from a divot hole. Tap to log (defaults to a 4), tap again to adjust.</div>
+    <div class="row" id="row6"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">7</span> Five clubs, five targets \u2014 again</h2>
+    <div class="desc">Close it out same as you started: five clubs, five fresh targets. Tap to log (defaults to a 4), tap again to adjust.</div>
+    <div class="row" id="row7"></div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="card history">
+    <h2>Session history</h2>
+    <div class="lifetime" id="lifetimeStats"></div>
+    <div id="historyList"></div>
+  </div>
+
+  <div class="notes">
+    <h2>Notes for next time</h2>
+    <textarea id="notesField" placeholder="What worked, what to dial in..."></textarea>
+  </div>
+  <div class="btnrow">
+    <button class="reset" id="resetBtn">Clear this session</button>
+  </div>
+  <div class="saved" id="savedMsg"></div>
+</footer>
+
+<script>
+const STORE_KEY = "shot54_sessions_v1";
+const clubs = ["9i","8i","7i","6i","5i","4i","Fwy","Dr"];
+const gridRows = ["High","Low","Fade \u2192","Draw \u2190","Half"];
+const TOTAL_CELLS = 5 + (clubs.length*gridRows.length) + 5 + 5 + 3 + 5 + 5; // 68
+const RATE_SEQUENCE = [0,4,5,1,2,3]; // first tap defaults to a 4, then cycles through the rest
+
+function emptySession(){
+  return {
+    loc:"", notes:"",
+    r1:[0,0,0,0,0], r3:[0,0,0,0,0], r4:[0,0,0,0,0],
+    r5:[0,0,0], r6:[0,0,0,0,0], r7:[0,0,0,0,0],
+    grid:{}
+  };
+}
+
+function loadSessions(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function persist(){
+  try{
+    sessions[currentDate] = session;
+    localStorage.setItem(STORE_KEY, JSON.stringify(sessions));
+    const m = document.getElementById('savedMsg');
+    m.textContent = "Saved";
+    setTimeout(()=>{ if(m.textContent==="Saved") m.textContent=""; }, 1200);
+  }catch(e){}
+}
+
+let sessions = loadSessions();
+let currentDate = new Date().toISOString().slice(0,10);
+let session = sessions[currentDate] ? JSON.parse(JSON.stringify(sessions[currentDate])) : emptySession();
+
+function nextValue(cur){
+  const idx = RATE_SEQUENCE.indexOf(cur);
+  return RATE_SEQUENCE[(idx + 1) % RATE_SEQUENCE.length];
+}
+
+function buildSimpleRow(id, arr){
+  const el = document.getElementById(id);
+  el.innerHTML = "";
+  arr.forEach((v,i)=>{
+    const d = document.createElement('div');
+    d.className = "chip" + (v ? " v" + v : "");
+    d.textContent = v ? v : "";
+    d.onclick = ()=>{
+      arr[i] = nextValue(arr[i] || 0);
+      d.className = "chip" + (arr[i] ? " v" + arr[i] : "");
+      d.textContent = arr[i] ? arr[i] : "";
+      updateScore(); persist(); renderHistory();
+    };
+    el.appendChild(d);
+  });
+}
+
+function paintChip(el, val){
+  el.className = "gchip" + (val ? " v" + val : "");
+  el.textContent = val ? val : "";
+}
+
+function buildGrid(){
+  const t = document.getElementById('gridTable');
+  let html = "<tr><th></th>" + clubs.map(c=>`<th>${c}</th>`).join("") + "</tr>";
+  gridRows.forEach((rname, ri)=>{
+    html += `<tr><td>${rname}</td>`;
+    clubs.forEach((c, ci)=>{
+      const key = ri+"_"+ci;
+      html += `<td><div class="gchip" data-key="${key}"></div></td>`;
+    });
+    html += "</tr>";
+  });
+  t.innerHTML = html;
+  t.querySelectorAll('.gchip').forEach(el=>{
+    const key = el.getAttribute('data-key');
+    paintChip(el, session.grid[key] || 0);
+    el.onclick = ()=>{
+      const next = nextValue(session.grid[key] || 0);
+      session.grid[key] = next;
+      paintChip(el, next);
+      updateScore(); persist(); renderHistory();
+    };
+  });
+}
+
+function sessionDone(s){
+  const simpleTotal = [s.r1,s.r3,s.r4,s.r5,s.r6,s.r7]
+    .reduce((sum,a)=>sum + a.reduce((x,y)=>x + (y>0?1:0),0), 0);
+  const gridDone = Object.values(s.grid).reduce((sum,v)=>sum+(v>0?1:0),0);
+  return simpleTotal + gridDone;
+}
+function sessionAverage(s){
+  const rowVals = [s.r1,s.r3,s.r4,s.r5,s.r6,s.r7].flat();
+  const gridVals = Object.values(s.grid);
+  const all = rowVals.concat(gridVals).filter(v=>v>0);
+  if(!all.length) return null;
+  return all.reduce((a,b)=>a+b,0) / all.length;
+}
+function gridAverage(s){
+  const vals = Object.values(s.grid).filter(v=>v>0);
+  if(!vals.length) return null;
+  return vals.reduce((a,b)=>a+b,0) / vals.length;
+}
+
+function updateScore(){
+  const done = sessionDone(session);
+  document.getElementById('doneCount').textContent = done;
+  document.getElementById('fillBar').style.width = Math.min(100, done/TOTAL_CELLS*100) + "%";
+
+  const oa = sessionAverage(session);
+  document.getElementById('avgOverall').textContent = oa ? oa.toFixed(1) : "\u2013";
+
+  const avg = gridAverage(session);
+  document.getElementById('gridAvg').textContent = avg ? ("avg " + avg.toFixed(1) + "/5") : "";
+}
+
+function renderHistory(){
+  const dates = Object.keys(sessions)
+    .filter(d => sessionDone(sessions[d]) > 0 || d === currentDate)
+    .sort((a,b)=> b.localeCompare(a));
+
+  const loggedDates = dates.filter(d => sessions[d] && sessionDone(sessions[d]) > 0);
+  const allVals = loggedDates.flatMap(d=>{
+    const s = sessions[d];
+    return [s.r1,s.r3,s.r4,s.r5,s.r6,s.r7].flat().concat(Object.values(s.grid));
+  }).filter(v=>v>0);
+  const lifetimeAvg = allVals.length ? (allVals.reduce((a,b)=>a+b,0)/allVals.length) : null;
+  const bestAvg = loggedDates.reduce((best,d)=>{
+    const a = sessionAverage(sessions[d]);
+    return (a!==null && (best===null || a>best)) ? a : best;
+  }, null);
+
+  document.getElementById('lifetimeStats').innerHTML = `
+    <div class="stat"><div class="v">${loggedDates.length}</div><div class="k">sessions</div></div>
+    <div class="stat"><div class="v">${lifetimeAvg ? lifetimeAvg.toFixed(1) : "\u2013"}</div><div class="k">lifetime avg</div></div>
+    <div class="stat"><div class="v">${bestAvg ? bestAvg.toFixed(1) : "\u2013"}</div><div class="k">best session</div></div>
+  `;
+
+  const listEl = document.getElementById('historyList');
+  if(!dates.length){
+    listEl.innerHTML = `<div class="hist-empty">No sessions logged yet \u2014 tap a box above to start today's.</div>`;
+    return;
+  }
+  listEl.innerHTML = dates.map(d=>{
+    const s = sessions[d];
+    const done = sessionDone(s);
+    const avg = sessionAverage(s);
+    const active = d === currentDate ? " active" : "";
+    return `<div class="hist-row${active}" data-date="${d}">
+      <div>
+        <div class="hist-date">${d}${d===currentDate ? " \u2022 current" : ""}</div>
+        <div class="hist-loc">${(s.loc||"").replace(/</g,"&lt;")}</div>
+      </div>
+      <div class="hist-right">
+        <div class="hist-count">${done}/${TOTAL_CELLS}</div>
+        <div class="hist-avg">${avg ? avg.toFixed(1) : "\u2013"}</div>
+      </div>
+    </div>`;
+  }).join("");
+  listEl.querySelectorAll('.hist-row').forEach(row=>{
+    row.onclick = ()=> switchToDate(row.getAttribute('data-date'));
+  });
+}
+
+function renderAll(){
+  document.getElementById('dateField').value = currentDate;
+  document.getElementById('locField').value = session.loc || "";
+  document.getElementById('notesField').value = session.notes || "";
+
+  buildSimpleRow('row1', session.r1);
+  buildSimpleRow('row3', session.r3);
+  buildSimpleRow('row4', session.r4);
+  buildSimpleRow('row5', session.r5);
+  buildSimpleRow('row6', session.r6);
+  buildSimpleRow('row7', session.r7);
+  buildGrid();
+  updateScore();
+  renderHistory();
+}
+
+function switchToDate(d){
+  currentDate = d;
+  session = sessions[currentDate] ? JSON.parse(JSON.stringify(sessions[currentDate])) : emptySession();
+  renderAll();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function init(){
+  renderAll();
+
+  document.getElementById('dateField').onchange = (e)=>{
+    switchToDate(e.target.value || new Date().toISOString().slice(0,10));
+  };
+  document.getElementById('locField').oninput = (e)=>{ session.loc = e.target.value; persist(); renderHistory(); };
+  document.getElementById('notesField').oninput = (e)=>{ session.notes = e.target.value; persist(); };
+
+  document.getElementById('resetBtn').onclick = ()=>{
+    if(!confirm(`Clear all boxes and notes for ${currentDate}? Other saved sessions won't be touched.`)) return;
+    session = emptySession();
+    persist();
+    renderAll();
+  };
+}
+init();
+</script>
+
+</body>
+</html>
