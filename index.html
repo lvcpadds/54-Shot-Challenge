@@ -213,9 +213,9 @@
 <body>
 
 <header>
-  <div class="eyebrow">Practice \u00b7 Vision54 drill</div>
+  <div class="eyebrow">Practice - Vision54 drill</div>
   <h1>54-Shot Challenge</h1>
-  <div class="sub">Full routine, real target, every shot. Tap a box once you've hit it \u2014 rate yourself 1\u20135 in your head as you go (5 = exactly what you meant to do).</div>
+  <div class="sub">Full routine, real target, every shot. Tap a box once you've hit it - rate yourself 1-5 in your head as you go (5 = exactly what you meant to do).</div>
 </header>
 
 <div class="scorebar">
@@ -225,7 +225,7 @@
   </div>
   <div class="track"><div class="fill" id="fillBar"></div></div>
   <div style="text-align:right;">
-    <div class="num" id="avgOverall">–</div>
+    <div class="num" id="avgOverall">-</div>
     <div class="label">avg rating</div>
   </div>
 </div>
@@ -254,7 +254,7 @@
 
   <div class="card">
     <h2><span class="n">3</span> Opposite-handed, five shots</h2>
-    <div class="desc">Turn a club around \u2014 righty swings lefty, or lefty swings righty. Tap to log (defaults to a 4), tap again to adjust.</div>
+    <div class="desc">Turn a club around - righty swings lefty, or lefty swings righty. Tap to log (defaults to a 4), tap again to adjust.</div>
     <div class="row" id="row3"></div>
   </div>
 
@@ -266,7 +266,7 @@
 
   <div class="card">
     <h2><span class="n">5</span> Break your stance, three shots</h2>
-    <div class="desc">7-iron with feet together \u2192 7-iron standing on your left leg \u2192 7-iron with eyes closed. Tap to log (defaults to a 4), tap again to adjust.</div>
+    <div class="desc">7-iron with feet together, then 7-iron standing on your left leg, then 7-iron with eyes closed. Tap to log (defaults to a 4), tap again to adjust.</div>
     <div class="row" id="row5"></div>
   </div>
 
@@ -277,7 +277,7 @@
   </div>
 
   <div class="card">
-    <h2><span class="n">7</span> Five clubs, five targets \u2014 again</h2>
+    <h2><span class="n">7</span> Five clubs, five targets - again</h2>
     <div class="desc">Close it out same as you started: five clubs, five fresh targets. Tap to log (defaults to a 4), tap again to adjust.</div>
     <div class="row" id="row7"></div>
   </div>
@@ -304,7 +304,7 @@
 <script>
 const STORE_KEY = "shot54_sessions_v1";
 const clubs = ["9i","8i","7i","6i","5i","4i","Fwy","Dr"];
-const gridRows = ["High","Low","Fade \u2192","Draw \u2190","Half"];
+const gridRows = ["High","Low","Fade R","Draw L","Half"];
 const TOTAL_CELLS = 5 + (clubs.length*gridRows.length) + 5 + 5 + 3 + 5 + 5; // 68
 const RATE_SEQUENCE = [0,4,5,1,2,3]; // first tap defaults to a 4, then cycles through the rest
 
@@ -413,7 +413,7 @@ function updateScore(){
   document.getElementById('fillBar').style.width = Math.min(100, done/TOTAL_CELLS*100) + "%";
 
   const oa = sessionAverage(session);
-  document.getElementById('avgOverall').textContent = oa ? oa.toFixed(1) : "\u2013";
+  document.getElementById('avgOverall').textContent = oa ? oa.toFixed(1) : "-";
 
   const avg = gridAverage(session);
   document.getElementById('gridAvg').textContent = avg ? ("avg " + avg.toFixed(1) + "/5") : "";
@@ -437,13 +437,13 @@ function renderHistory(){
 
   document.getElementById('lifetimeStats').innerHTML = `
     <div class="stat"><div class="v">${loggedDates.length}</div><div class="k">sessions</div></div>
-    <div class="stat"><div class="v">${lifetimeAvg ? lifetimeAvg.toFixed(1) : "\u2013"}</div><div class="k">lifetime avg</div></div>
-    <div class="stat"><div class="v">${bestAvg ? bestAvg.toFixed(1) : "\u2013"}</div><div class="k">best session</div></div>
+    <div class="stat"><div class="v">${lifetimeAvg ? lifetimeAvg.toFixed(1) : "-"}</div><div class="k">lifetime avg</div></div>
+    <div class="stat"><div class="v">${bestAvg ? bestAvg.toFixed(1) : "-"}</div><div class="k">best session</div></div>
   `;
 
   const listEl = document.getElementById('historyList');
   if(!dates.length){
-    listEl.innerHTML = `<div class="hist-empty">No sessions logged yet \u2014 tap a box above to start today's.</div>`;
+    listEl.innerHTML = `<div class="hist-empty">No sessions logged yet - tap a box above to start today's.</div>`;
     return;
   }
   listEl.innerHTML = dates.map(d=>{
@@ -453,12 +453,12 @@ function renderHistory(){
     const active = d === currentDate ? " active" : "";
     return `<div class="hist-row${active}" data-date="${d}">
       <div>
-        <div class="hist-date">${d}${d===currentDate ? " \u2022 current" : ""}</div>
+        <div class="hist-date">${d}${d===currentDate ? " - current" : ""}</div>
         <div class="hist-loc">${(s.loc||"").replace(/</g,"&lt;")}</div>
       </div>
       <div class="hist-right">
         <div class="hist-count">${done}/${TOTAL_CELLS}</div>
-        <div class="hist-avg">${avg ? avg.toFixed(1) : "\u2013"}</div>
+        <div class="hist-avg">${avg ? avg.toFixed(1) : "-"}</div>
       </div>
     </div>`;
   }).join("");
